@@ -1,0 +1,17 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - go build -v http.go
+
+  test:
+    deps: [unit, it]
+
+  unit:
+    cmds:
+      - go test $(go list ./... | grep -v /itests)
+
+  it:
+    cmds:
+      - go test ./itests/...
