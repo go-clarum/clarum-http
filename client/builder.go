@@ -36,5 +36,5 @@ func (builder *EndpointBuilder) Timeout(timeout time.Duration) *EndpointBuilder 
 }
 
 func (builder *EndpointBuilder) Build() *Endpoint {
-	return NewEndpoint(builder.name, builder.baseUrl, builder.contentType, builder.timeout)
+	return newEndpoint(builder.name, builder.baseUrl, builder.contentType, builder.timeout)
 }

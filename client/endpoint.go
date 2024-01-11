@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/goclarum/clarum/core/config"
 	"github.com/goclarum/clarum/core/control"
+	"github.com/goclarum/clarum/core/durations"
 	clarumstrings "github.com/goclarum/clarum/core/validators/strings"
 	"github.com/goclarum/clarum/http/constants"
 	"github.com/goclarum/clarum/http/internal/utils"
@@ -30,9 +31,9 @@ type responsePair struct {
 	error    error
 }
 
-func NewEndpoint(name string, baseUrl string, contentType string, timeout time.Duration) *Endpoint {
+func newEndpoint(name string, baseUrl string, contentType string, timeout time.Duration) *Endpoint {
 	client := http.Client{
-		Timeout: getTimeoutWithDefault(timeout),
+		Timeout: durations.GetDurationWithDefault(timeout, 10*time.Second),
 	}
 
 	return &Endpoint{
@@ -192,16 +193,6 @@ func handleError(format string, a ...any) error {
 	errorMessage := fmt.Sprintf(format, a...)
 	slog.Error(errorMessage)
 	return errors.New(errorMessage)
-}
-
-func getTimeoutWithDefault(timeout time.Duration) time.Duration {
-	var timeoutToSet time.Duration
-	if timeout > 0 {
-		timeoutToSet = timeout
-	} else {
-		timeoutToSet = 10 * time.Second
-	}
-	return timeoutToSet
 }
 
 func logOutgoingRequest(prefix string, payload string, req *http.Request) {

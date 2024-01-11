@@ -41,7 +41,7 @@ type sendPair struct {
 	error    error
 }
 
-func NewServerEndpoint(name string, port uint, contentType string, timeout time.Duration) *Endpoint {
+func newServerEndpoint(name string, port uint, contentType string, timeout time.Duration) *Endpoint {
 	ctx, cancelCtx := context.WithCancel(context.Background())
 	sendChannel := make(chan *sendPair)
 	requestChannel := make(chan *http.Request)

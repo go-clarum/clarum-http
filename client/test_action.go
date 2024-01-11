@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// TestSendActionBuilder used to initiate a send or receive action on a client endpoint
+// TestActionBuilder TestSendActionBuilder used to initiate a send or receive action on a client endpoint
 // with the context of a test
 type TestActionBuilder struct {
 	test     *testing.T

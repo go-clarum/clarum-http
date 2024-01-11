@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewEndpoint(t *testing.T) {
-	endpoint := NewEndpoint("newName", "myUrl", constants.ContentTypeJsonHeader,
+	endpoint := newEndpoint("newName", "myUrl", constants.ContentTypeJsonHeader,
 		time.Second*2)
 
 	if endpoint == nil {
@@ -36,7 +36,7 @@ func TestNewEndpoint(t *testing.T) {
 }
 
 func TestNewEndpointDefaultTimeout(t *testing.T) {
-	endpoint := NewEndpoint("a", "b", "c", 0)
+	endpoint := newEndpoint("a", "b", "c", 0)
 
 	if endpoint.client.Timeout != time.Second*10 {
 		t.Errorf("invalid endpoint.client.Timeout")
@@ -44,7 +44,7 @@ func TestNewEndpointDefaultTimeout(t *testing.T) {
 }
 
 func TestGetMessageToSend(t *testing.T) {
-	endpoint := NewEndpoint("name", "endpointUrl", "endpointContent", 0)
+	endpoint := newEndpoint("name", "endpointUrl", "endpointContent", 0)
 
 	initialRequest := message.Get("my-url")
 	finalRequest := endpoint.getMessageToSend(initialRequest)
@@ -64,7 +64,7 @@ func TestGetMessageToSend(t *testing.T) {
 }
 
 func TestGetMessageToSendNoChangeInFinalRequest(t *testing.T) {
-	endpoint := NewEndpoint("name", "endpointUrl", "endpointContent", 0)
+	endpoint := newEndpoint("name", "endpointUrl", "endpointContent", 0)
 
 	initialRequest := message.Get("my-url").
 		BaseUrl("otherBaseUrl").
@@ -86,7 +86,7 @@ func TestGetMessageToSendNoChangeInFinalRequest(t *testing.T) {
 }
 
 func TestGetMessageToReceive(t *testing.T) {
-	endpoint := NewEndpoint("name", "endpointUrl", "endpointContent", 0)
+	endpoint := newEndpoint("name", "endpointUrl", "endpointContent", 0)
 
 	initialResponse := message.Response(http.StatusOK)
 	finalResponse := endpoint.getMessageToReceive(initialResponse)
@@ -103,7 +103,7 @@ func TestGetMessageToReceive(t *testing.T) {
 }
 
 func TestGetMessageToReceiveNoChangeInFinalResponse(t *testing.T) {
-	endpoint := NewEndpoint("name", "endpointUrl", "endpointContent", 0)
+	endpoint := newEndpoint("name", "endpointUrl", "endpointContent", 0)
 
 	initialResponse := message.Response(http.StatusOK).
 		ContentType("otherContentType")
@@ -177,19 +177,5 @@ func TestBuildRequest(t *testing.T) {
 	queryParamValues := newRequest.URL.Query()["someParameter"]
 	if queryParamValues[0] != "someValue" {
 		t.Errorf("invalid newRequest.URL.QueryParams[someParameter]")
-	}
-}
-
-func TestGetTimeoutWithDefault(t *testing.T) {
-	t1 := getTimeoutWithDefault(time.Second * 5)
-
-	if t1 != time.Second*5 {
-		t.Errorf("invalid timeout")
-	}
-
-	defaultTimeout := getTimeoutWithDefault(0)
-
-	if defaultTimeout != time.Second*10 {
-		t.Errorf("default timeout not set")
 	}
 }

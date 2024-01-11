@@ -36,5 +36,5 @@ func (builder *EndpointBuilder) ContentType(contentType string) *EndpointBuilder
 }
 
 func (builder *EndpointBuilder) Build() *Endpoint {
-	return NewServerEndpoint(builder.name, builder.port, builder.contentType, builder.timeout)
+	return newServerEndpoint(builder.name, builder.port, builder.contentType, builder.timeout)
 }
