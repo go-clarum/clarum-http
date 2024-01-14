@@ -13,7 +13,7 @@ This package contains:
 The whole framework is currently in beta, so be aware that the setup and API may change.
 The documentation below is incomplete. It is just an example to get you started until the complete official documentation will be written.
 
-### Setup
+## Setup
 It is recommended to create a separate folder for your integration tests. In this example we will use the name `itests`.
 
 1. Initiate a go project inside the folder you created:
@@ -67,20 +67,24 @@ var myApiClient = clarumhttp.Http().Client().
     Timeout(2000 * time.Millisecond).
     Build()
 
-var thirdPartyServer = clarumhttp.Http().Server().
-    Name("thirdPartyServer").
+var productService = clarumhttp.Http().Server().
+    Name("productService").
     Port(8083).
     Build()
 ```
 
 5. Write tests.
 
-The configured endpoints offer you an API to execute test actions. Test actions are how you tell Clarum to do something. 
+The configured endpoints offer you an API to execute test actions. Test actions are how you tell Clarum to do something.
 In this context, the endpoints we have configured above will allow you to send and receive HTTP requests and responses.
 
-All you need to do now is to create a standard go test and use the endpoints to build the logic you want to test.
+You will notice that Clarum offers a different way of writing tests. The classical AAA testing pattern, while good for unit testing, is not so good for integration tests.
+When writing these kind of tests, use-cases end up being really complex and mocking everything before sending the first request will result in tests that are really hard to read and understand.
+This is why Clarum offers a different approach. With test actions you end up writing a test that represents 1:1 the flow of your use-case.
+
+All you need to do now is to create a standard go test and use the endpoints to build the logic you need.
 Remember that you are writing integration tests. This means that before your tests run, your application and all other required infrastructure have to be running.
-Clarum offers some functionality to help you with orchestration. See below.
+Clarum offers some functionality to help you with orchestration as well. See below.
 
 Actions will return errors when executed. These errors will either be caused by something that went wrong when executing the action itself or when a validation has failed.
 If you don't want to always check these errors, you can allow Clarum to fail your tests automatically, by passing the current test instance to the action.
@@ -90,7 +94,7 @@ to the action which allows it to signal a test failure.
 
 
 ### HTTP Client Endpoint
-A client endpoint allows you to send any type of HTTP requests to initiate a use-case in your application.
+A client endpoint allows you to send any type of HTTP request to initiate a use-case in your application.
 
 Here are some examples to get you started. For the complete feature set, check the API.
 ```go
@@ -109,7 +113,7 @@ func TestMyApi(t *testing.T) {
       "}")
     )
 
-  // send POST request with JSON 
+  // send PUT request with JSON 
   myApiClient.In(t).Send().
     Message(message.Put().
       ContentType(constants.ContentTypeJsonHeader).
@@ -129,6 +133,28 @@ func TestMyApi(t *testing.T) {
     )
 }
 ```
-
-
 For working examples, check [clarum-samples](https://github.com/go-clarum/samples).
+
+### HTTP Server Endpoint
+In a typical scenario, the client will send a request to initiate a use-case, and your service may need to call another service to get some data.
+In such a case you will use a server endpoint, which allows you to receive any type of HTTP request sent by the service you are testing and then send a response back.
+
+Here are some examples to get you started. For the complete feature set, check the API.
+```go
+func TestMyApi(t *testing.T) {
+
+  // receive a GET request from your service
+  productService.In(t).Receive().
+    Json().
+    Message(message.Get("products").
+      Payload("{" +
+        "\"type\": \"hardware\"" +
+      "}")
+    )
+  // send back an error response
+  productService.In(t).Send().
+    Message(message.Response(http.StatusInternalServerError))
+}
+
+```
+
