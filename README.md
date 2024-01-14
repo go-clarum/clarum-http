@@ -57,8 +57,8 @@ You can create a `clarum-properties.yaml` file to change different configuration
 4. Configure client and/or server endpoints.
 ```go
 import (
-...
-clarumhttp "github.com/goclarum/clarum/http"
+  ...
+  clarumhttp "github.com/goclarum/clarum/http"
 )
 
 var myApiClient = clarumhttp.Http().Client().
@@ -158,3 +158,45 @@ func TestMyApi(t *testing.T) {
 
 ```
 
+### Orchestration
+While developing your service, you will probably start it with your IDE in order to debug functionality. You will often run integration tests this way.
+But there are also situations when you don't want to have to start your service/infrastructure everytime manually before running the tests.
+
+Clarum offers some actions to automate this as well. The orchestration package gives you the ability to run commands during your tests or test setup.
+This way you can either start your service or some infrastructure (docker-compose) required by your tests, before they are executed.
+
+1. Configure your command.
+```go
+import (
+  ...
+  "github.com/goclarum/clarum/core/orchestration/command"
+)
+
+var myAppInstance = command.Command().
+  Components("go", "run", "../main.go").
+  Warmup(1 * time.Second).
+  Build()
+```
+
+1. Setup `start()` & `stop()` in `TestMain`.
+```go
+func TestMain(m *testing.M) {
+  clarumcore.Setup()
+
+  if err := appInstance.Run(); err != nil {
+    slog.Error(fmt.Sprintf("Test suite did not start because of startup error - %s", err))
+    return
+  }
+
+  result := m.Run()
+
+  if err := appInstance.Stop(); err != nil {
+    slog.Error(fmt.Sprintf("Test suite ended with shutdown error  - %s", err))
+  }
+  clarumcore.Finish()
+
+  os.Exit(result)
+}
+```
+
+**Note**: This kind of setup will certainly change with version 1.0. 
