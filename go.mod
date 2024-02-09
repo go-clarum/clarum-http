@@ -1,4 +1,4 @@
-module github.com/goclarum/clarum/http
+module github.com/go-clarum/clarum-http
 
 go 1.21
 

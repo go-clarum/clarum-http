@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/goclarum/clarum/http/internal"
-	"github.com/goclarum/clarum/http/message"
+	"github.com/go-clarum/clarum-http/internal"
+	"github.com/go-clarum/clarum-http/message"
 	"net/http"
 	"testing"
 )

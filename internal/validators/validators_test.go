@@ -3,8 +3,8 @@ package validators
 import (
 	"github.com/go-clarum/clarum-core/config"
 	"github.com/go-clarum/clarum-core/logging"
-	"github.com/goclarum/clarum/http/constants"
-	"github.com/goclarum/clarum/http/message"
+	"github.com/go-clarum/clarum-http/constants"
+	"github.com/go-clarum/clarum-http/message"
 	"net/http"
 	"testing"
 )

@@ -1,7 +1,7 @@
 package errors
 
 import (
-	"github.com/goclarum/clarum/http/message"
+	"github.com/go-clarum/clarum-http/message"
 	"testing"
 )
 

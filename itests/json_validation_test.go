@@ -1,7 +1,7 @@
 package itests
 
 import (
-	"github.com/goclarum/clarum/http/message"
+	"github.com/go-clarum/clarum-http/message"
 	"net/http"
 	"testing"
 )

@@ -1,8 +1,8 @@
 package http
 
 import (
-	"github.com/goclarum/clarum/http/client"
-	"github.com/goclarum/clarum/http/server"
+	"github.com/go-clarum/clarum-http/client"
+	"github.com/go-clarum/clarum-http/server"
 )
 
 type EndpointBuilder struct {

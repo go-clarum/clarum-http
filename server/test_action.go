@@ -1,7 +1,7 @@
 package server
 
 import (
-	"github.com/goclarum/clarum/http/internal"
+	"github.com/go-clarum/clarum-http/internal"
 	"testing"
 )
 

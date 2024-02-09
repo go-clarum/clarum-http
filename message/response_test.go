@@ -1,7 +1,7 @@
 package message
 
 import (
-	"github.com/goclarum/clarum/http/constants"
+	"github.com/go-clarum/clarum-http/constants"
 	"testing"
 )
 

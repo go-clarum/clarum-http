@@ -2,7 +2,7 @@ package itests
 
 import (
 	clarumcore "github.com/go-clarum/clarum-core"
-	clarumhttp "github.com/goclarum/clarum/http"
+	clarumhttp "github.com/go-clarum/clarum-http"
 	"os"
 	"testing"
 	"time"
