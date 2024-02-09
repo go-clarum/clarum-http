@@ -2,7 +2,7 @@ package errors
 
 import (
 	"errors"
-	clarumcore "github.com/goclarum/clarum/core"
+	clarumcore "github.com/go-clarum/clarum-core"
 	clarumhttp "github.com/goclarum/clarum/http"
 
 	"os"

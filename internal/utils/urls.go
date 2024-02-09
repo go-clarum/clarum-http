@@ -2,7 +2,7 @@ package utils
 
 import (
 	"fmt"
-	clarumstrings "github.com/goclarum/clarum/core/validators/strings"
+	clarumstrings "github.com/go-clarum/clarum-core/validators/strings"
 	"net/url"
 )
 

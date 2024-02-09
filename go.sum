@@ -1,3 +1,5 @@
+github.com/go-clarum/clarum-core v0.1.0 h1:GkXUn5U2JaUlIi/ojkgexPXcXwhfzwefs5klmn4P1q0=
+github.com/go-clarum/clarum-core v0.1.0/go.mod h1:L1guRHi+CrM6CE2PNr2raAvfVPzJSR6VaEyC1a3bP1o=
 github.com/go-clarum/clarum-json v1.0.0 h1:HFnhhzDjT4et/X/ricK7pXDPhtsZSEpORuSPKUiFrCY=
 github.com/go-clarum/clarum-json v1.0.0/go.mod h1:SZi2GKhcHUUCN0g2njGi9vrgr1+8gLwEjhMAiNZao1s=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
