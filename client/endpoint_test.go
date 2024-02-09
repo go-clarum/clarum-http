@@ -121,37 +121,40 @@ func TestGetMessageToReceiveNoChangeInFinalResponse(t *testing.T) {
 }
 
 func TestValidateMessageToSend(t *testing.T) {
+	endpoint := newEndpoint("name", "baseUrl", "", 0)
 	request := message.Get("my-url").
 		BaseUrl("http://localhost:8080")
 
-	if err := validateMessageToSend("prefix", request); err != nil {
+	if err := endpoint.validateMessageToSend(request); err != nil {
 		t.Errorf("request must be valid")
 	}
 
 	request = message.Get("my-url")
-	if err := validateMessageToSend("prefix", request); !(err != nil && err.Error() == "prefix: message to send is invalid - missing url") {
+	if err := endpoint.validateMessageToSend(request); !(err != nil && err.Error() == "name: message to send is invalid - missing url") {
 		t.Errorf("invalid error")
 	}
 
 	request = message.Get("my-url").BaseUrl("something")
-	if err := validateMessageToSend("prefix", request); !(err != nil && err.Error() == "prefix: message to send is invalid - invalid url") {
+	if err := endpoint.validateMessageToSend(request); !(err != nil && err.Error() == "name: message to send is invalid - invalid url") {
 		t.Errorf("invalid error")
 	}
 
 	request = &message.RequestMessage{}
-	if err := validateMessageToSend("prefix", request); !(err != nil && err.Error() == "prefix: message to send is invalid - missing HTTP method") {
+	if err := endpoint.validateMessageToSend(request); !(err != nil && err.Error() == "name: message to send is invalid - missing HTTP method") {
 		t.Errorf("invalid error")
 	}
 }
 
 func TestBuildRequest(t *testing.T) {
+	endpoint := newEndpoint("name", "baseUrl", "", 0)
+
 	requestMessage := message.Post("my", "api/v0").
 		BaseUrl("http://localhost:8080").
 		ContentType("text/plain").
 		QueryParam("someParameter", "someValue").
 		Payload("batman!")
 
-	newRequest, err := buildRequest("prefix", requestMessage)
+	newRequest, err := endpoint.buildRequest(requestMessage)
 	if err != nil {
 		t.Errorf("error is unexpected")
 	}

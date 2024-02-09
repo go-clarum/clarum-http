@@ -11,7 +11,7 @@ import (
 // HTTP header validation error: header missing
 func TestHeaderMissingResponseValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: validation error - header <etag> missing",
+		"validation error - header <etag> missing",
 	}
 
 	e1 := errorsClient.Send().
@@ -31,7 +31,7 @@ func TestHeaderMissingResponseValidation(t *testing.T) {
 // HTTP header validation error: header value incorrect
 func TestHeaderInvalidResponseValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: validation error - header <someheader> mismatch - expected [wrongValue] but received [[someValue]]",
+		"validation error - header <someheader> mismatch - expected [wrongValue] but received [[someValue]]",
 	}
 
 	e1 := errorsClient.Send().
@@ -54,7 +54,7 @@ func TestHeaderInvalidResponseValidation(t *testing.T) {
 // HTTP plain text response payload validation error: payload missing
 func TestMissingTextResponsePayloadValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: validation error - payload missing - expected [expected payload] but received no payload",
+		"validation error - payload missing - expected [expected payload] but received no payload",
 	}
 
 	e1 := errorsClient.Send().
@@ -74,7 +74,7 @@ func TestMissingTextResponsePayloadValidation(t *testing.T) {
 // HTTP plain text response payload validation error: payload invalid
 func TestWrongTextResponsePayloadValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: validation error - payload mismatch - expected [expected payload] but received [wrong payload]",
+		"validation error - payload mismatch - expected [expected payload] but received [wrong payload]",
 	}
 
 	e1 := errorsClient.Send().

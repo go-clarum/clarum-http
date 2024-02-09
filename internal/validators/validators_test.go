@@ -1,17 +1,21 @@
 package validators
 
 import (
+	"github.com/goclarum/clarum/core/config"
+	"github.com/goclarum/clarum/core/logging"
 	"github.com/goclarum/clarum/http/constants"
 	"github.com/goclarum/clarum/http/message"
 	"net/http"
 	"testing"
 )
 
+var logger = logging.NewLogger(config.LoggingLevel(), "validators test: ")
+
 func TestValidatePathOK(t *testing.T) {
 	expectedMessage := createTestMessageWithHeaders()
 	req := createRealRequest()
 
-	if err := ValidatePath("pathOKTest", expectedMessage, req.URL); err != nil {
+	if err := ValidatePath(expectedMessage, req.URL, logger); err != nil {
 		t.Errorf("No header validation error expected, but got %s", err)
 	}
 }
@@ -21,13 +25,13 @@ func TestValidatePathError(t *testing.T) {
 	expectedMessage.Path = "blup/"
 	req := createRealRequest()
 
-	err := ValidatePath("pathErrorTest", expectedMessage, req.URL)
+	err := ValidatePath(expectedMessage, req.URL, logger)
 
 	if err == nil {
 		t.Errorf("Path validation error expected, but got none")
 	}
 
-	if err.Error() != "pathErrorTest: validation error - HTTP path mismatch - expected [blup] but received [myPath/some/api]" {
+	if err.Error() != "validation error - path mismatch - expected [blup] but received [myPath/some/api]" {
 		t.Errorf("Path validation error message is unexpected")
 	}
 }
@@ -36,7 +40,7 @@ func TestValidateMethodOK(t *testing.T) {
 	expectedMessage := createTestMessageWithHeaders()
 	req := createRealRequest()
 
-	if err := ValidateHttpMethod("methodOKTest", expectedMessage, req.Method); err != nil {
+	if err := ValidateHttpMethod(expectedMessage, req.Method, logger); err != nil {
 		t.Errorf("No header validation error expected, but got %s", err)
 	}
 }
@@ -46,13 +50,13 @@ func TestValidateMethodError(t *testing.T) {
 	expectedMessage.Method = http.MethodOptions
 	req := createRealRequest()
 
-	err := ValidateHttpMethod("methodErrorTest", expectedMessage, req.Method)
+	err := ValidateHttpMethod(expectedMessage, req.Method, logger)
 
 	if err == nil {
 		t.Errorf("Method validation error expected, but got none")
 	}
 
-	if err.Error() != "methodErrorTest: validation error - HTTP method mismatch - expected [OPTIONS] but received [POST]" {
+	if err.Error() != "validation error - method mismatch - expected [OPTIONS] but received [POST]" {
 		t.Errorf("Path validation error message is unexpected")
 	}
 }
@@ -61,7 +65,7 @@ func TestValidateHeadersOK(t *testing.T) {
 	expectedMessage := createTestMessageWithHeaders()
 	req := createRealRequest()
 
-	if err := ValidateHttpHeaders("headersOKTest", &expectedMessage.Message, req.Header); err != nil {
+	if err := ValidateHttpHeaders(&expectedMessage.Message, req.Header, logger); err != nil {
 		t.Errorf("No header validation error expected, but got %s", err)
 	}
 }
@@ -72,13 +76,13 @@ func TestValidateHeaderValueError(t *testing.T) {
 
 	req := createRealRequest()
 
-	err := ValidateHttpHeaders("headersErrorTest", &expectedMessage.Message, req.Header)
+	err := ValidateHttpHeaders(&expectedMessage.Message, req.Header, logger)
 
 	if err == nil {
 		t.Errorf("Header validation error expected, but got none")
 	}
 
-	if err.Error() != "headersErrorTest: validation error - header <authorization> mismatch - expected [something else] but received [[Bearer 0b79bab50daca910b000d4f1a2b675d604257e42]]" {
+	if err.Error() != "validation error - header <authorization> mismatch - expected [something else] but received [[Bearer 0b79bab50daca910b000d4f1a2b675d604257e42]]" {
 		t.Errorf("Header validation error message is unexpected")
 	}
 }
@@ -89,13 +93,13 @@ func TestValidateMissingHeaderError(t *testing.T) {
 
 	req := createRealRequest()
 
-	err := ValidateHttpHeaders("headersErrorTest", &expectedMessage.Message, req.Header)
+	err := ValidateHttpHeaders(&expectedMessage.Message, req.Header, logger)
 
 	if err == nil {
 		t.Errorf("Header validation error expected, but got none")
 	}
 
-	if err.Error() != "headersErrorTest: validation error - header <traceid> missing" {
+	if err.Error() != "validation error - header <traceid> missing" {
 		t.Errorf("Header validation error message is unexpected")
 	}
 }
@@ -111,7 +115,7 @@ func TestValidateQueryParamsOK(t *testing.T) {
 	qParams.Set("param2", "value2")
 	req.URL.RawQuery = qParams.Encode()
 
-	if err := ValidateHttpQueryParams("queryParamsOKTest", expectedMessage, req.URL); err != nil {
+	if err := ValidateHttpQueryParams(expectedMessage, req.URL, logger); err != nil {
 		t.Errorf("No query param validation error expected, but got %s", err)
 	}
 }
@@ -127,12 +131,12 @@ func TestValidateQueryParamsParamMismatch(t *testing.T) {
 	qParams.Set("param3", "value2")
 	req.URL.RawQuery = qParams.Encode()
 
-	err := ValidateHttpQueryParams("queryParamsErrorTest", expectedMessage, req.URL)
+	err := ValidateHttpQueryParams(expectedMessage, req.URL, logger)
 	if err == nil {
 		t.Errorf("Query param validation error expected, but got none")
 	}
 
-	if err.Error() != "queryParamsErrorTest: validation error - query param <param2> missing" {
+	if err.Error() != "validation error - query param <param2> missing" {
 		t.Errorf("Query param validation error message is unexpected")
 	}
 }
@@ -148,12 +152,12 @@ func TestValidateQueryParamsValueMismatch(t *testing.T) {
 	qParams.Set("param2", "value22")
 	req.URL.RawQuery = qParams.Encode()
 
-	err := ValidateHttpQueryParams("queryParamValueErrorTest", expectedMessage, req.URL)
+	err := ValidateHttpQueryParams(expectedMessage, req.URL, logger)
 	if err == nil {
 		t.Errorf("Query param validation error expected, but got none")
 	}
 
-	if err.Error() != "queryParamValueErrorTest: validation error - query param <param2> values mismatch - expected [[value2]] but received [[value22]]" {
+	if err.Error() != "validation error - query param <param2> values mismatch - expected [[value2]] but received [[value22]]" {
 		t.Errorf("Query param validation error message is unexpected")
 	}
 }
@@ -170,7 +174,7 @@ func TestValidateQueryParamsMultiValueOK(t *testing.T) {
 	qParams.Add("param1", "value3")
 	req.URL.RawQuery = qParams.Encode()
 
-	if err := ValidateHttpQueryParams("queryParamsMultiValueOKTest", expectedMessage, req.URL); err != nil {
+	if err := ValidateHttpQueryParams(expectedMessage, req.URL, logger); err != nil {
 		t.Errorf("No query param validation error expected, but got %s", err)
 	}
 }
@@ -186,12 +190,12 @@ func TestValidateQueryParamsMultiValueMismatch(t *testing.T) {
 	qParams.Add("param1", "value3")
 	req.URL.RawQuery = qParams.Encode()
 
-	err := ValidateHttpQueryParams("queryParamsMultiValueErrorTest", expectedMessage, req.URL)
+	err := ValidateHttpQueryParams(expectedMessage, req.URL, logger)
 	if err == nil {
 		t.Errorf("Query param validation error expected, but got none")
 	}
 
-	if err.Error() != "queryParamsMultiValueErrorTest: validation error - query param <param1> values mismatch - expected [[value1 value2 value4]] but received [[value1 value2 value3]]" {
+	if err.Error() != "validation error - query param <param1> values mismatch - expected [[value1 value2 value4]] but received [[value1 value2 value3]]" {
 		t.Errorf("Query param validation error message is unexpected")
 	}
 }

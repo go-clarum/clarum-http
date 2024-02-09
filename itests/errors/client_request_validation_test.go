@@ -9,7 +9,7 @@ import (
 
 func TestClientSendNilMessage(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: message to send is nil",
+		"errorsClient: message to send is nil",
 	}
 
 	e1 := errorsClient.Send().Message(nil)
@@ -19,7 +19,7 @@ func TestClientSendNilMessage(t *testing.T) {
 
 func TestClientSendNilUrl(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: message to send is invalid - missing url",
+		"errorsClient: message to send is invalid - missing url",
 	}
 
 	e1 := errorsClient.Send().Message(message.Get())
@@ -29,7 +29,7 @@ func TestClientSendNilUrl(t *testing.T) {
 
 func TestClientSendInvalidUrl(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: message to send is invalid - invalid url",
+		"errorsClient: message to send is invalid - invalid url",
 	}
 
 	e1 := errorsClient.Send().Message(message.Get().BaseUrl("http:/localhost:8081"))
@@ -41,7 +41,7 @@ func TestClientSendInvalidUrl(t *testing.T) {
 
 func TestClientSendInvalidMessageMethod(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: message to send is invalid - missing HTTP method",
+		"errorsClient: message to send is invalid - missing HTTP method",
 	}
 
 	request := &message.RequestMessage{

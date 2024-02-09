@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"github.com/goclarum/clarum/core/config"
 	"github.com/goclarum/clarum/core/control"
+	"github.com/goclarum/clarum/core/logging"
 	clarumstrings "github.com/goclarum/clarum/core/validators/strings"
 	"github.com/goclarum/clarum/http/constants"
 	"github.com/goclarum/clarum/http/internal/validators"
 	"github.com/goclarum/clarum/http/message"
 	"io"
-	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -28,12 +28,14 @@ type Endpoint struct {
 	context                  *context.Context
 	requestValidationChannel chan *http.Request
 	sendChannel              chan *sendPair
+	logger                   *logging.Logger
 }
 
 type endpointContext struct {
 	endpointName             string
 	requestValidationChannel chan *http.Request
 	sendChannel              chan *sendPair
+	logger                   *logging.Logger
 }
 
 type sendPair struct {
@@ -53,6 +55,7 @@ func newServerEndpoint(name string, port uint, contentType string, timeout time.
 		context:                  &ctx,
 		sendChannel:              sendChannel,
 		requestValidationChannel: requestChannel,
+		logger:                   logging.NewLogger(config.LoggingLevel(), serverLogPrefix(name)),
 	}
 
 	// feature: start automatically = true/false; to simulate connection errors
@@ -63,31 +66,29 @@ func newServerEndpoint(name string, port uint, contentType string, timeout time.
 
 // this Method is blocking, until a request is received
 func (endpoint *Endpoint) receive(message *message.RequestMessage, validationOptions receiveOptions) (*http.Request, error) {
-	logPrefix := serverLogPrefix(endpoint.name)
-	slog.Debug(fmt.Sprintf("%s: message to receive %s", logPrefix, message.ToString()))
+	endpoint.logger.Debugf("message to receive %s", message.ToString())
 	messageToReceive := endpoint.getMessageToReceive(message)
 
 	select {
 	case receivedRequest := <-endpoint.requestValidationChannel:
-		slog.Debug(fmt.Sprintf("%s: validation message %s", logPrefix, messageToReceive.ToString()))
+		endpoint.logger.Debugf("validation message %s", messageToReceive.ToString())
 
 		return receivedRequest, errors.Join(
-			validators.ValidatePath(logPrefix, messageToReceive, receivedRequest.URL),
-			validators.ValidateHttpMethod(logPrefix, messageToReceive, receivedRequest.Method),
-			validators.ValidateHttpHeaders(logPrefix, &messageToReceive.Message, receivedRequest.Header),
-			validators.ValidateHttpQueryParams(logPrefix, messageToReceive, receivedRequest.URL),
-			validators.ValidateHttpPayload(logPrefix, &messageToReceive.Message, receivedRequest.Body,
-				validationOptions.expectedPayloadType))
+			validators.ValidatePath(messageToReceive, receivedRequest.URL, endpoint.logger),
+			validators.ValidateHttpMethod(messageToReceive, receivedRequest.Method, endpoint.logger),
+			validators.ValidateHttpHeaders(&messageToReceive.Message, receivedRequest.Header, endpoint.logger),
+			validators.ValidateHttpQueryParams(messageToReceive, receivedRequest.URL, endpoint.logger),
+			validators.ValidateHttpPayload(&messageToReceive.Message, receivedRequest.Body,
+				validationOptions.expectedPayloadType, endpoint.logger))
 	case <-time.After(config.ActionTimeout()):
-		return nil, handleError("%s: receive action timed out - no request received for validation", logPrefix)
+		return nil, endpoint.handleError("receive action timed out - no request received for validation", nil)
 	}
 }
 
 func (endpoint *Endpoint) send(message *message.ResponseMessage) error {
-	logPrefix := serverLogPrefix(endpoint.name)
 	messageToSend := endpoint.getMessageToSend(message)
 
-	err := validateMessageToSend(logPrefix, messageToSend)
+	err := endpoint.validateMessageToSend(messageToSend)
 
 	// we must always send a signal downstream so that the handler is not blocked
 	toSend := &sendPair{
@@ -99,7 +100,7 @@ func (endpoint *Endpoint) send(message *message.ResponseMessage) error {
 	case endpoint.sendChannel <- toSend:
 		return err
 	case <-time.After(config.ActionTimeout()):
-		return handleError("%s: send action timed out - no request received for validation", logPrefix)
+		return endpoint.handleError("send action timed out - no request received for validation", nil)
 	}
 }
 
@@ -141,6 +142,7 @@ func (endpoint *Endpoint) start(ctx context.Context, cancelCtx context.CancelFun
 				endpointName:             endpoint.name,
 				requestValidationChannel: endpoint.requestValidationChannel,
 				sendChannel:              endpoint.sendChannel,
+				logger:                   endpoint.logger,
 			}
 			ctx = context.WithValue(ctx, contextNameKey, endpointContext)
 			return ctx
@@ -148,15 +150,10 @@ func (endpoint *Endpoint) start(ctx context.Context, cancelCtx context.CancelFun
 	}
 
 	go func() {
-		logPrefix := serverLogPrefix(endpoint.name)
 		if err := server.ListenAndServe(); err != nil {
-			if errors.Is(err, http.ErrServerClosed) {
-				fmt.Println(fmt.Sprintf("%s: closed", logPrefix))
-			} else {
-				fmt.Println(fmt.Sprintf("%s: error - %s", logPrefix, err))
-			}
+			endpoint.logger.Errorf("error - %s", err)
 		} else {
-			fmt.Println(fmt.Sprintf("%s: closed - %s", logPrefix, err))
+			endpoint.logger.Info("closed server")
 		}
 
 		cancelCtx()
@@ -172,43 +169,39 @@ func (endpoint *Endpoint) start(ctx context.Context, cancelCtx context.CancelFun
 // The handler blocks until a timeout is triggered
 func requestHandler(resWriter http.ResponseWriter, request *http.Request) {
 	control.RunningActions.Add(1)
-	defer finishOrRecover()
-
 	ctx := request.Context().Value(contextNameKey).(*endpointContext)
+	defer finishOrRecover(ctx.logger)
 
-	logPrefix := serverLogPrefix(ctx.endpointName)
-	logIncomingRequest(logPrefix, request)
+	logIncomingRequest(ctx.logger, request)
 
 	select {
 	case ctx.requestValidationChannel <- request:
-		slog.Debug(fmt.Sprintf("%s: received HTTP request sent to request validation channel", logPrefix))
+		ctx.logger.Debug("received request was sent to validation channel")
 	case <-time.After(config.ActionTimeout()):
-		slog.Warn(fmt.Sprintf("%s: request handling timed out - no server receive action called in test", logPrefix))
+		ctx.logger.Warn("request handling timed out - no server receive action called in test")
 	}
 
 	select {
 	case sendPair := <-ctx.sendChannel:
 		// error from upstream - we send a response to close the HTTP cycle
 		if sendPair.error != nil {
-			errorMessage := fmt.Sprintf("%s: request handler received error from upstream", logPrefix)
-			sendDefaultErrorResponse(logPrefix, errorMessage, resWriter)
+			sendDefaultErrorResponse(ctx.logger, "request handler received error from upstream", resWriter)
 			return
 		}
 
 		// check if response is empty - we send a response to close the HTTP cycle
 		if sendPair.response == nil {
-			errorMessage := fmt.Sprintf("%s: request handler received empty ResponseMesage", logPrefix)
-			sendDefaultErrorResponse(logPrefix, errorMessage, resWriter)
+			sendDefaultErrorResponse(ctx.logger, "request handler received empty ResponseMesage", resWriter)
 			return
 		}
 
-		sendResponse(logPrefix, sendPair, resWriter)
+		sendResponse(ctx.logger, sendPair, resWriter)
 	case <-time.After(config.ActionTimeout()):
-		slog.Warn(fmt.Sprintf("%s: response handling timed out - no server send action called in test", logPrefix))
+		ctx.logger.Warn("response handling timed out - no server send action called in test")
 	}
 }
 
-func sendResponse(logPrefix string, sendPair *sendPair, resWriter http.ResponseWriter) {
+func sendResponse(logger *logging.Logger, sendPair *sendPair, resWriter http.ResponseWriter) {
 	for header, value := range sendPair.response.Headers {
 		resWriter.Header().Set(header, value)
 	}
@@ -217,72 +210,77 @@ func sendResponse(logPrefix string, sendPair *sendPair, resWriter http.ResponseW
 
 	_, err := io.WriteString(resWriter, sendPair.response.MessagePayload)
 	if err != nil {
-		slog.Error(fmt.Sprintf("%s: could not write response body - %s", logPrefix, err))
+		logger.Errorf("could not write response body - %s", err)
 	}
-	logOutgoingResponse(logPrefix, sendPair.response.StatusCode, sendPair.response.MessagePayload, resWriter)
+	logOutgoingResponse(logger, sendPair.response.StatusCode, sendPair.response.MessagePayload, resWriter)
 }
 
-func sendDefaultErrorResponse(logPrefix string, errorMessage string, resWriter http.ResponseWriter) {
-	slog.Error(errorMessage)
+func sendDefaultErrorResponse(logger *logging.Logger, errorMessage string, resWriter http.ResponseWriter) {
+	logger.Error(errorMessage)
 	resWriter.WriteHeader(http.StatusInternalServerError)
-	logOutgoingResponse(logPrefix, http.StatusInternalServerError, "", resWriter)
+	logOutgoingResponse(logger, http.StatusInternalServerError, "", resWriter)
 }
 
-func validateMessageToSend(prefix string, messageToSend *message.ResponseMessage) error {
+func (endpoint *Endpoint) validateMessageToSend(messageToSend *message.ResponseMessage) error {
 	if messageToSend.StatusCode < 100 || messageToSend.StatusCode > 999 {
-		return handleError("%s: message to send is invalid - unsupported status code [%d]",
-			prefix, messageToSend.StatusCode)
+		return endpoint.handleError(fmt.Sprintf("message to send is invalid - unsupported status code [%d]",
+			messageToSend.StatusCode), nil)
 	}
 
 	return nil
 }
 
-func handleError(format string, a ...any) error {
-	errorMessage := fmt.Sprintf(format, a...)
-	slog.Error(errorMessage)
-	return errors.New(errorMessage)
+func (endpoint *Endpoint) handleError(message string, err error) error {
+	var errorMessage string
+	if err != nil {
+		errorMessage = message + " - " + err.Error()
+	} else {
+		errorMessage = message
+	}
+	endpoint.logger.Errorf(errorMessage)
+	return errors.New(endpoint.logger.Prefix() + errorMessage)
 }
 
-func finishOrRecover() {
+func finishOrRecover(logger *logging.Logger) {
 	control.RunningActions.Done()
 
 	if r := recover(); r != nil {
-		slog.Error(fmt.Sprintf("HTTP server endpoint panicked: error - %s", r))
+		logger.Errorf("endpoint panicked: error - %s", r)
 	}
 }
 
 // we read the body 'as is' for logging, after which we put it back into the request
 // with an open reader so that it can be read downstream again
-func logIncomingRequest(logPrefix string, request *http.Request) {
+func logIncomingRequest(logger *logging.Logger, request *http.Request) {
 	bodyBytes, _ := io.ReadAll(request.Body)
 	bodyString := ""
 
 	err := request.Body.Close()
 	if err != nil {
-		slog.Error(fmt.Sprintf("%s: could not read request body - %s", logPrefix, err))
+		logger.Errorf("could not read request body - %s", err)
 	} else {
 		request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 		bodyString = string(bodyBytes)
 	}
 
-	slog.Info(fmt.Sprintf("%s: received request ["+
+	logger.Infof("received HTTP request ["+
 		"method: %s, "+
 		"url: %s, "+
 		"headers: %s, "+
 		"payload: %s"+
 		"]",
-		logPrefix, request.Method, request.URL.String(), request.Header, bodyString))
+		request.Method, request.URL.String(), request.Header, bodyString)
 }
 
-func logOutgoingResponse(prefix string, statusCode int, payload string, res http.ResponseWriter) {
-	slog.Info(fmt.Sprintf("%s: sending response ["+
+func logOutgoingResponse(logger *logging.Logger, statusCode int, payload string, res http.ResponseWriter) {
+	logger.Infof("sending response ["+
 		"status: %d, "+
 		"headers: %s, "+
 		"payload: %s"+
 		"]",
-		prefix, statusCode, res.Header(), payload))
+		statusCode, res.Header(), payload)
 }
 
 func serverLogPrefix(endpointName string) string {
-	return fmt.Sprintf("HTTP server %s", endpointName)
+	return fmt.Sprintf("%s: ", endpointName)
 }

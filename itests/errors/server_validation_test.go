@@ -12,7 +12,7 @@ import (
 // Client sends HTTP GET & server expects POST
 func TestMethodValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - HTTP method mismatch - expected [POST] but received [GET]",
+		"validation error - method mismatch - expected [POST] but received [GET]",
 	}
 
 	e1 := errorsClient.Send().Message(message.Get().BaseUrl("http://localhost:8083/myApp"))
@@ -31,8 +31,8 @@ func TestMethodValidation(t *testing.T) {
 // Server receives a message to send with an invalid HTTP status code -> default error response because of the error
 func TestInvalidStatusCode(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: message to send is invalid - unsupported status code [99]",
-		"HTTP client errorsClient: validation error - HTTP status mismatch - expected [200] but received [500]",
+		"message to send is invalid - unsupported status code [99]",
+		"validation error - status mismatch - expected [200] but received [500]",
 	}
 
 	e1 := errorsClient.Send().Message(message.Get().BaseUrl("http://localhost:8083/myApp"))
@@ -51,7 +51,7 @@ func TestInvalidStatusCode(t *testing.T) {
 // Server responds with 400 Bad Request & client expects 200 OK
 func TestStatusCodeValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP client errorsClient: validation error - HTTP status mismatch - expected [200] but received [400]",
+		"validation error - status mismatch - expected [200] but received [400]",
 	}
 
 	e1 := errorsClient.Send().Message(message.Get().BaseUrl("http://localhost:8083/myApp"))
@@ -70,7 +70,7 @@ func TestStatusCodeValidation(t *testing.T) {
 // Server responds with 404 Bad Request & client expects 200 OK
 func TestPathValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - HTTP path mismatch - expected [my/resource/5433] but received [my/resource/1234]",
+		"validation error - path mismatch - expected [my/resource/5433] but received [my/resource/1234]",
 	}
 
 	e1 := errorsClient.Send().
@@ -90,7 +90,7 @@ func TestPathValidation(t *testing.T) {
 // HTTP header validation error: multiple headers, one missing
 func TestHeaderMissingValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - header <traceid> missing",
+		"validation error - header <traceid> missing",
 	}
 
 	e1 := errorsClient.Send().
@@ -113,7 +113,7 @@ func TestHeaderMissingValidation(t *testing.T) {
 // HTTP header validation error: header value incorrect
 func TestHeaderInvalidValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - header <authorization> mismatch - expected [Bearer: 234121] but received [[Bearer: 123152123123]]",
+		"validation error - header <authorization> mismatch - expected [Bearer: 234121] but received [[Bearer: 123152123123]]",
 	}
 
 	e1 := errorsClient.Send().
@@ -135,7 +135,7 @@ func TestHeaderInvalidValidation(t *testing.T) {
 // HTTP query params validation error: query param missing
 func TestQueryParamMissingValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - query param <param2> missing",
+		"validation error - query param <param2> missing",
 	}
 
 	e1 := errorsClient.Send().
@@ -158,7 +158,7 @@ func TestQueryParamMissingValidation(t *testing.T) {
 // HTTP query params validation error: query param value mismatch
 func TestQueryParamInvalidValueValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - query param <param2> values mismatch - expected [[value3]] but received [[value2]]",
+		"validation error - query param <param2> values mismatch - expected [[value3]] but received [[value2]]",
 	}
 
 	e1 := errorsClient.Send().
@@ -182,7 +182,7 @@ func TestQueryParamInvalidValueValidation(t *testing.T) {
 // HTTP query params validation error: query param multi value mismatch
 func TestQueryParamInvalidMultiValueValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - query param <param2> values mismatch - expected [[value2 value3]] but received [[value2 value4]]",
+		"validation error - query param <param2> values mismatch - expected [[value2 value3]] but received [[value2 value4]]",
 	}
 
 	e1 := errorsClient.Send().
@@ -206,7 +206,7 @@ func TestQueryParamInvalidMultiValueValidation(t *testing.T) {
 // HTTP plain text request payload validation error: payload missing
 func TestMissingTextRequestPayloadValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - payload missing - expected [expected payload] but received no payload",
+		"validation error - payload missing - expected [expected payload] but received no payload",
 	}
 
 	e1 := errorsClient.Send().
@@ -226,7 +226,7 @@ func TestMissingTextRequestPayloadValidation(t *testing.T) {
 // HTTP plain text request payload validation error: payload invalid
 func TestWrongTextRequestPayloadValidation(t *testing.T) {
 	expectedErrors := []string{
-		"HTTP server errorsServer: validation error - payload mismatch - expected [expected payload] but received [wrong payload]",
+		"validation error - payload mismatch - expected [expected payload] but received [wrong payload]",
 	}
 
 	e1 := errorsClient.Send().
